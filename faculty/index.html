@@ -2,87 +2,71 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ExamSeat - Student Portal</title>
+  <title>Faculty Admin - ExamSeat</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body class="bg-light">
 
 <div class="container py-5">
   <div class="row justify-content-center">
-    <div class="col-md-6 text-center">
-      <h3 class="mb-4">Semester Exam Seating</h3>
-
-      <div id="loading" class="spinner-border text-primary my-4" role="status"></div>
-      
-      <div id="unreleasedAlert" class="alert alert-warning d-none">
-        <h4>Seating Not Released Yet</h4>
-        <p class="mb-0">Seating details for today's exam sessions are being processed. Please check back shortly.</p>
-      </div>
-
-      <div id="searchCard" class="card p-4 shadow-sm d-none">
+    <div class="col-md-6">
+      <div class="card shadow p-4">
+        <h3 class="mb-3">Publish Seating Arrangement</h3>
+        
         <div class="mb-3">
-          <label for="regInput" class="form-label fw-bold">Enter Registration Number</label>
-          <input type="text" class="form-control form-control-lg text-center" id="regInput" placeholder="e.g. 20301001" autofocus>
+          <label class="form-label fw-bold">Google Sheet URL</label>
+          <input type="url" id="sheetUrl" class="form-control" placeholder="https://docs.google.com/spreadsheets/d/..." required>
         </div>
-        <button onclick="searchSeating()" class="btn btn-primary btn-lg w-100">Find My Room</button>
-        <div id="resultContainer" class="mt-4"></div>
-      </div>
 
+        <div class="form-check form-switch mb-4">
+          <input class="form-check-input" type="checkbox" id="releaseToggle" checked>
+          <label class="form-check-label fw-bold" for="releaseToggle">Release to Students Immediately</label>
+        </div>
+
+        <button onclick="submitSeating()" id="submitBtn" class="btn btn-primary w-100 btn-lg">Publish Seating Plan</button>
+        <div id="statusMsg" class="mt-3 text-center"></div>
+      </div>
     </div>
   </div>
 </div>
 
 <script>
   const API_URL = "YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL"; // Paste your deployed Web App URL here
-  let seatingData = [];
 
-  window.onload = function() {
-    fetch(API_URL)
-      .then(res => res.json())
-      .then(resData => {
-        document.getElementById('loading').classList.add('d-none');
-        if (resData.isReleased) {
-          seatingData = resData.data || [];
-          document.getElementById('searchCard').classList.remove('d-none');
-        } else {
-          document.getElementById('unreleasedAlert').classList.remove('d-none');
-        }
-      })
-      .catch(() => {
-        document.getElementById('loading').classList.add('d-none');
-        document.getElementById('unreleasedAlert').classList.remove('d-none');
-      });
-  };
+  function submitSeating() {
+    const sheetUrl = document.getElementById('sheetUrl').value.trim();
+    const isReleased = document.getElementById('releaseToggle').checked;
+    const btn = document.getElementById('submitBtn');
+    const statusMsg = document.getElementById('statusMsg');
 
-  function searchSeating() {
-    const regNo = document.getElementById('regInput').value.trim();
-    const resultContainer = document.getElementById('resultContainer');
-    resultContainer.innerHTML = '';
-
-    if (!regNo) return;
-
-    const matches = seatingData.filter(item => item.reg_no === regNo);
-
-    if (matches.length > 0) {
-      let html = '';
-      matches.forEach(item => {
-        html += `
-          <div class="alert alert-success text-start">
-            <div class="d-flex justify-content-between align-items-center">
-              <span class="badge bg-primary fs-6">${item.session} Session</span>
-              <span class="fw-bold fs-5">Room: ${item.room}</span>
-            </div>
-            <hr class="my-2">
-            <div><strong>Seat Number:</strong> ${item.seat}</div>
-            <small class="text-muted">Date: ${item.date || 'Today'}</small>
-          </div>
-        `;
-      });
-      resultContainer.innerHTML = html;
-    } else {
-      resultContainer.innerHTML = `<div class="alert alert-danger">No room assignment found for <strong>${regNo}</strong>.</div>`;
+    if (!sheetUrl) {
+      alert("Please paste the Google Sheet URL!");
+      return;
     }
+
+    btn.disabled = true;
+    btn.innerText = "Processing & Converting...";
+    statusMsg.innerHTML = '<span class="text-info">Parsing Google Sheet & updating Drive...</span>';
+
+    fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ sheetUrl: sheetUrl, isReleased: isReleased })
+    })
+    .then(res => res.json())
+    .then(data => {
+      btn.disabled = false;
+      btn.innerText = "Publish Seating Plan";
+      if (data.status === "success") {
+        statusMsg.innerHTML = `<span class="text-success fw-bold">Successfully Published! Updated ${data.count} student seating records.</span>`;
+      } else {
+        statusMsg.innerHTML = `<span class="text-danger">Error: ${data.message}</span>`;
+      }
+    })
+    .catch(err => {
+      btn.disabled = false;
+      btn.innerText = "Publish Seating Plan";
+      statusMsg.innerHTML = `<span class="text-danger">Failed to publish. Check permissions or URL.</span>`;
+    });
   }
 </script>
 
