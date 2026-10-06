@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Semester Exam Seating</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-6 text-center">
+      <h3 class="mb-4">Semester Exam Seating Search</h3>
+      
+      <div id="unreleasedAlert" class="alert alert-warning d-none">
+        <h4>Seating Not Released Yet</h4>
+        <p class="mb-0">The seating arrangements for today's exam sessions are being finalized. Please scan the QR code again later.</p>
+      </div>
+
+      <div id="searchCard" class="card p-4 shadow-sm d-none">
+        <div class="mb-3">
+          <label for="regInput" class="form-label fw-bold">Enter Registration Number</label>
+          <input type="text" class="form-control form-control-lg text-center" id="regInput" placeholder="e.g. 20301001" autofocus>
+        </div>
+        <button onclick="searchSeating()" class="btn btn-primary btn-lg w-100">Find Room</button>
+        <div id="resultContainer" class="mt-4"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script>
+  window.onload = function() {
+    // Verify if release flag is true
+    if (typeof seatingConfig !== 'undefined' && seatingConfig.isReleased) {
+      document.getElementById('searchCard').classList.remove('d-none');
+    } else {
+      document.getElementById('unreleasedAlert').classList.remove('d-none');
+    }
+  };
+
+  function searchSeating() {
+    const regNo = document.getElementById('regInput').value.trim();
+    const resultContainer = document.getElementById('resultContainer');
+    resultContainer.innerHTML = '';
+
+    if (!regNo) return;
+
+    const matches = seatingData.filter(item => item.reg_no === regNo);
+
+    if (matches.length > 0) {
+      let html = '';
+      matches.forEach(item => {
+        html += `
+          <div class="alert alert-success text-start">
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="badge bg-primary fs-6">${item.session} Session</span>
+              <span class="fw-bold fs-5">Room: ${item.room}</span>
+            </div>
+            <hr class="my-2">
+            <div><strong>Seat Number:</strong> ${item.seat}</div>
+            <small class="text-muted">Date: ${item.date || 'Today'}</small>
+          </div>
+        `;
+      });
+      resultContainer.innerHTML = html;
+    } else {
+      resultContainer.innerHTML = `<div class="alert alert-danger">No room found for Registration No: <strong>${regNo}</strong></div>`;
+    }
+  }
+</script>
+
+</body>
+</html>
