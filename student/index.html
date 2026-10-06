@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Semester Exam Seating</title>
+  <title>ExamSeat - Student Portal</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body class="bg-light">
@@ -11,11 +11,13 @@
 <div class="container py-5">
   <div class="row justify-content-center">
     <div class="col-md-6 text-center">
-      <h3 class="mb-4">Semester Exam Seating Search</h3>
+      <h3 class="mb-4">Semester Exam Seating</h3>
+
+      <div id="loading" class="spinner-border text-primary my-4" role="status"></div>
       
       <div id="unreleasedAlert" class="alert alert-warning d-none">
         <h4>Seating Not Released Yet</h4>
-        <p class="mb-0">The seating arrangements for today's exam sessions are being finalized. Please scan the QR code again later.</p>
+        <p class="mb-0">Seating details for today's exam sessions are being processed. Please check back shortly.</p>
       </div>
 
       <div id="searchCard" class="card p-4 shadow-sm d-none">
@@ -23,7 +25,7 @@
           <label for="regInput" class="form-label fw-bold">Enter Registration Number</label>
           <input type="text" class="form-control form-control-lg text-center" id="regInput" placeholder="e.g. 20301001" autofocus>
         </div>
-        <button onclick="searchSeating()" class="btn btn-primary btn-lg w-100">Find Room</button>
+        <button onclick="searchSeating()" class="btn btn-primary btn-lg w-100">Find My Room</button>
         <div id="resultContainer" class="mt-4"></div>
       </div>
 
@@ -31,15 +33,26 @@
   </div>
 </div>
 
-<script src="data.js"></script>
 <script>
+  const API_URL = "YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL"; // Paste your deployed Web App URL here
+  let seatingData = [];
+
   window.onload = function() {
-    // Verify if release flag is true
-    if (typeof seatingConfig !== 'undefined' && seatingConfig.isReleased) {
-      document.getElementById('searchCard').classList.remove('d-none');
-    } else {
-      document.getElementById('unreleasedAlert').classList.remove('d-none');
-    }
+    fetch(API_URL)
+      .then(res => res.json())
+      .then(resData => {
+        document.getElementById('loading').classList.add('d-none');
+        if (resData.isReleased) {
+          seatingData = resData.data || [];
+          document.getElementById('searchCard').classList.remove('d-none');
+        } else {
+          document.getElementById('unreleasedAlert').classList.remove('d-none');
+        }
+      })
+      .catch(() => {
+        document.getElementById('loading').classList.add('d-none');
+        document.getElementById('unreleasedAlert').classList.remove('d-none');
+      });
   };
 
   function searchSeating() {
@@ -68,7 +81,7 @@
       });
       resultContainer.innerHTML = html;
     } else {
-      resultContainer.innerHTML = `<div class="alert alert-danger">No room found for Registration No: <strong>${regNo}</strong></div>`;
+      resultContainer.innerHTML = `<div class="alert alert-danger">No room assignment found for <strong>${regNo}</strong>.</div>`;
     }
   }
 </script>
